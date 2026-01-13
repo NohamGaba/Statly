@@ -22,10 +22,18 @@ namespace Statly.API.Controllers
         [HttpGet]
         public async Task<IActionResult> GetClubs()
         {
-            // On récupère tous les clubs depuis la base
-            var clubs = await _context.Clubs.ToListAsync();
+            // On récupère les clubs depuis la base
+            var clubs = await _context.Clubs
+                .Select(c => new ClubDto
+                {
+                    Id = c.Id,
+                    Name = c.Name,
+                    Country = c.Country,
+                    LogoUrl = c.LogoUrl
+                })
+                .ToListAsync();
 
-            // On renvoie HTTP 200 + la liste
+            // On retourne la liste des DTOs (pas les entités)
             return Ok(clubs);
         }
 
@@ -49,7 +57,16 @@ namespace Statly.API.Controllers
             await _context.SaveChangesAsync();
 
             // On retourne HTTP 201 Created
-            return CreatedAtAction(nameof(GetClubs), club);
+            var result = new ClubDto
+            {
+                Id = club.Id,
+                Name = club.Name,
+                Country = club.Country,
+                LogoUrl = club.LogoUrl
+            };
+
+            // On retourne le DTO, pas l'entité
+            return CreatedAtAction(nameof(GetClubs), result);
         }
     }
 }
