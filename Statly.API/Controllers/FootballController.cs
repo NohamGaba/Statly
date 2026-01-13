@@ -20,11 +20,9 @@ namespace Statly.API.Controllers
         [HttpGet("leagues")]
         public async Task<IActionResult> GetLeagues()
         {
-            // Appel du service
-            var result = await _footballApiService.GetLeaguesRawAsync();
-
-            // On retourne le JSON brut pour test
-            return Ok(result);
+            var leagues = await _footballApiService.GetLeaguesAsync();
+            return Ok(leagues);
         }
+
     }
 }
