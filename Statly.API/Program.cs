@@ -1,20 +1,36 @@
 using Microsoft.EntityFrameworkCore;
+using Statly.API.Services;
 using Statly.Infrastructure.Data;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container.
+// ======================
+// SERVICES (AVANT Build)
+// ======================
+
+// Controllers
 builder.Services.AddControllers();
 
+// DbContext
 builder.Services.AddDbContext<StatlyDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
 
+builder.Services.AddHttpClient<FootballApiService>(client =>
+{
+    client.BaseAddress = new Uri("https://v3.football.api-sports.io/");
+});
+
+
+// Swagger
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
 var app = builder.Build();
 
-// Configure the HTTP request pipeline.
+// ======================
+// PIPELINE HTTP
+// ======================
+
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
@@ -22,9 +38,6 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
-
 app.UseAuthorization();
-
 app.MapControllers();
-
 app.Run();
