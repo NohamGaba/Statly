@@ -1,6 +1,9 @@
 ﻿using System.Net.Http;
+using System.Text.Json;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Configuration;
+using Statly.API.Dtos.Football;
+using System.Linq;
 
 namespace Statly.API.Services;
 
@@ -19,26 +22,45 @@ public class FootballApiService
         _configuration = configuration;
     }
 
-    // Méthode simple pour tester l'API Football
-    public async Task<string> GetLeaguesRawAsync()
+    public async Task<List<LeagueDto>> GetLeaguesAsync()
     {
-        // On récupère la clé API depuis user-secrets
         var apiKey = _configuration["FootballApi:ApiKey"];
 
-        // On ajoute le header obligatoire demandé par l'API
         _httpClient.DefaultRequestHeaders.Clear();
         _httpClient.DefaultRequestHeaders.Add("x-apisports-key", apiKey);
 
-        // Appel GET vers https://v3.football.api-sports.io/leagues
         var response = await _httpClient.GetAsync("leagues");
-
-        // On s'assure que la réponse est OK (200)
         response.EnsureSuccessStatusCode();
 
-        // On lit le contenu JSON brut
-        var content = await response.Content.ReadAsStringAsync();
+        var json = await response.Content.ReadAsStringAsync();
 
-        // On retourne le JSON tel quel (temporaire)
-        return content;
+        // On parse le JSON
+        using var doc = JsonDocument.Parse(json);
+
+        var leagues = doc.RootElement
+         .GetProperty("response")      // On récupère la propriété "response"
+         .EnumerateArray()             // 🔥 On dit : "c'est un tableau"
+         .Select(l => new LeagueDto    // Maintenant LINQ fonctionne
+         {
+             // Id de la ligue
+             Id = l.GetProperty("league").GetProperty("id").GetInt32(),
+
+             // Nom de la ligue
+             Name = l.GetProperty("league").GetProperty("name").GetString()!,
+
+             // Type (League / Cup)
+             Type = l.GetProperty("league").GetProperty("type").GetString()!,
+
+             // Logo
+             Logo = l.GetProperty("league").GetProperty("logo").GetString()!,
+
+             // Pays
+             Country = l.GetProperty("country").GetProperty("name").GetString()!
+         })
+         .ToList(); // On transforme en List<LeagueDto>
+
+
+        return leagues;
     }
+
 }
